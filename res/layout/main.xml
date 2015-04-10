@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.kevin.widgets.views.LabelLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	app:label_offset="20dp"
+	app:label_pos="left"
+	android:text="@string/label1"
+	android:textColor="#ff0000"
+	android:textSize="20sp"
+	>
+
+	<LinearLayout
+		android:id="@+id/child_linear_layout"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:orientation="vertical" >
+
+		<TextView
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:paddingRight="20dip"
+			android:text="@string/demo_msg" />
+
+		
+
+		<com.kevin.widgets.views.LabelLayout
+			android:layout_width="200dp"
+			android:layout_height="wrap_content"			
+			app:label_pos="middle"
+			android:text="@string/label2"
+			android:textSize="14sp"
+			app:canHideContent="false"
+			 >
+
+			<LinearLayout
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:orientation="vertical" 
+				android:background="#FFCC80">
+
+				<TextView
+					android:id="@+id/textView1"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:text="Large Text"
+					android:textAppearance="?android:attr/textAppearanceLarge" />
+
+				<ToggleButton
+					android:id="@+id/toggleButton1"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:text="ToggleButton" />
+
+				<Button
+					android:id="@+id/button1"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:text="Button" />
+				
+			</LinearLayout>
+			
+		</com.kevin.widgets.views.LabelLayout>
+		<LinearLayout
+				android:layout_width="match_parent"
+				android:layout_height="0dp"
+				android:layout_weight="1"
+				android:orientation="vertical" 
+				android:background="#FFFFFF">
+			<TextView
+					android:id="@+id/textView2"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:text="Large Text"
+					android:textAppearance="?android:attr/textAppearanceLarge" />
+			</LinearLayout>
+			
+     >
+	</LinearLayout>
+
+</com.kevin.widgets.views.LabelLayout>

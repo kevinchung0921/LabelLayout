@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">LabelLayoutTest</string>
+    <string name="demo_msg">Hi! This is a test message!</string>
+	<string name="label1"> I am a label, try click me!</string>
+	<string name="label2"> I am aother label!</string>
+</resources>

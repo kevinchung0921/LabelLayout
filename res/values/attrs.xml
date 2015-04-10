@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="OutlineLayoutConfig">    	   
+    	<attr name="label_pos">
+    	    <enum name="middle" value="0" />
+        	<enum name="left" value="1" />
+        	<enum name="right" value="2" />        	
+        </attr>
+        <attr name="label_offset" format ="dimension"/>
+        <attr name="animation" format ="boolean"/>
+        <attr name="canHideContent" format ="boolean"/>
+	</declare-styleable>
+</resources>
