@@ -83,12 +83,12 @@ public class LabelLayout extends ViewGroup {
 	String mLabel = "";
 	
 	
-	boolean debug = false;
+	boolean debug = true;
 	
 	boolean mEnableAnimation = true;
 	boolean mEnableHideContent = true;
 	
-	int childTop, childLeft, childRight, childBottom;
+	int mChildTop, mChildLeft, mChildRight, mChildBottom;
 		
 	public LabelLayout(Context context) {
 		this(context, null);
@@ -106,7 +106,7 @@ public class LabelLayout extends ViewGroup {
 		TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.OutlineLayoutConfig);
 		mLabelPos = a.getInt(R.styleable.OutlineLayoutConfig_label_pos, LABEL_MIDDLE);
         mLabelOffset = (int)a.getDimensionPixelSize(R.styleable.OutlineLayoutConfig_label_offset, 0);
-        debug(TAG,"mLabelOffset:"+mLabelOffset);
+        debug("mLabelOffset:"+mLabelOffset);
         mEnableAnimation = a.getBoolean(R.styleable.OutlineLayoutConfig_animation, true);
         mLabelSize *= dpToPx;
         enableHideContent(a.getBoolean(R.styleable.OutlineLayoutConfig_canHideContent, true));
@@ -174,16 +174,24 @@ public class LabelLayout extends ViewGroup {
 		int maxWidth = 0;
 		int childState = 0;
 
+		int givenWidth = MeasureSpec.getSize(widthMeasureSpec);
+		int givenHeight = MeasureSpec.getSize(heightMeasureSpec);
+		
 		View v = getChildAt(INDEX_TEXT);
-		v.measure(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+		debug(String.format("measure spec w:%s h:%s", MeasureSpec.toString(widthMeasureSpec),MeasureSpec.toString(heightMeasureSpec)));
+		v.measure(0, 0);
 		mTvHeight = v.getMeasuredHeight();
 		mTvWidth = v.getMeasuredWidth();
+		if(mDefaultTopHeight < mTvHeight)
+			mDefaultTopHeight = mTvHeight;
 		maxWidth = mTvWidth + 2*mDefaultWidth;
 		maxHeight = mDefaultTopHeight + mDefaultBottomHeight + mDefaultContentHeight;
 		for (int i = DEFAULT_VIEWS_NUM; i < count; i++) {
 			View child = getChildAt(i);
 			if (child.getVisibility() != View.GONE) {
-				child.measure(widthMeasureSpec, heightMeasureSpec);
+				// only allow child use the size which subtract outline size 
+				child.measure(MeasureSpec.makeMeasureSpec(givenWidth-2*mDefaultWidth, MeasureSpec.EXACTLY), 
+						MeasureSpec.makeMeasureSpec(givenHeight-mDefaultTopHeight-mDefaultBottomHeight, MeasureSpec.EXACTLY));
 //				if (getOrientation() == LinearLayout.HORIZONTAL) {
 //					maxHeight = Math.max(maxHeight, child.getMeasuredHeight());
 //					maxWidth = maxWidth + child.getMeasuredWidth();
@@ -208,7 +216,7 @@ public class LabelLayout extends ViewGroup {
 		maxHeight = mCustomHeight+ mDefaultTopHeight + mDefaultBottomHeight + getPaddingTop()+getPaddingBottom();
 		maxWidth = mCustomWidth + 2*mDefaultWidth+ getPaddingLeft()+getPaddingRight();
 
-		debug(TAG, getLabel()+" maxHeight:" + maxHeight + " maxWidth:" + maxWidth);
+		debug(getLabel()+" maxHeight:" + maxHeight + " maxWidth:" + maxWidth);
 		// Report our final dimensions.
 		setMeasuredDimension(
 				resolveSizeAndState(maxWidth, widthMeasureSpec, childState),
@@ -218,7 +226,7 @@ public class LabelLayout extends ViewGroup {
 	
 	@Override
 	protected void onLayout(boolean changed, int l, int t, int r, int b) {
-		debug(TAG, String.format("%s Layout size l:%d, t:%d, r:%d, b:%d",getLabel(), l, t, r, b));
+		debug(String.format("%s Layout size l:%d, t:%d, r:%d, b:%d",getLabel(), l, t, r, b));
 		
 		int width = r - l;
 		int height = b - t;
@@ -232,13 +240,14 @@ public class LabelLayout extends ViewGroup {
         int paddingTop = getPaddingTop();
         int paddingBottom = getPaddingBottom();
 		
-		childBottom = height - paddingBottom;
-		childTop = paddingTop;
-		childLeft = paddingLeft;
-		childRight = width - paddingRight;
+		mChildBottom = height - paddingBottom;
+		mChildTop = paddingTop;
+		mChildLeft = paddingLeft;
+		mChildRight = width - paddingRight;
 		
-		int childWidth = childRight - childLeft;
-		int childHeight = childBottom - childTop;
+		debug(String.format("padding l:%d t:%d r:%d b:%d",  paddingLeft, paddingTop, paddingRight, paddingBottom));
+		int childWidth = mChildRight - mChildLeft;
+		int childHeight = mChildBottom - mChildTop;
 		
 		// check text view wider than total width
 		if(mTvWidth > childWidth - 2 *(mDefaultWidth))
@@ -258,10 +267,8 @@ public class LabelLayout extends ViewGroup {
 				ul_width = childWidth -ur_width - mTvWidth;
 				break;
 		}
-		
-		if (mDefaultTopHeight < mTvHeight)
-			mDefaultTopHeight = mTvHeight;
-		
+				
+	
 		View v = getChildAt(INDEX_LEFT_UP);
 
 		childLayout(v, 0, mDefaultTopHeight/2, ul_width, mTvHeight);
@@ -289,7 +296,7 @@ public class LabelLayout extends ViewGroup {
 			if(v != null) {	
 				childLayout(v, mDefaultWidth, mDefaultTopHeight, childWidth - mDefaultWidth,
 						mDefaultTopHeight + mCustomHeight);
-				debug(TAG,String.format(getLabel()+"content layout at l:%d t:%d, r:%d, b:%d",mDefaultWidth,mDefaultTopHeight, (r - mDefaultWidth), (mDefaultTopHeight + mCustomHeight)));
+				debug(String.format(getLabel()+"content layout at l:%d t:%d, r:%d, b:%d",mDefaultWidth,mDefaultTopHeight, (r - mDefaultWidth), (mDefaultTopHeight + mCustomHeight)));
 				if(v.getVisibility() != View.VISIBLE) {
 					fadeInAnimation(v);
 					v.setVisibility(View.VISIBLE);
@@ -312,11 +319,11 @@ public class LabelLayout extends ViewGroup {
 		childLayout(v, 0, mDefaultTopHeight + mCustomHeight, childWidth / 2, childHeight);
 		v = getChildAt(INDEX_RIGHT_BOTTOM);
 		childLayout(v, childWidth / 2, mDefaultTopHeight + mCustomHeight, childWidth, childHeight);
-		debug(TAG,String.format("%s bottom layout at l:%d t:%d, r:%d, b:%d",getLabel(),childWidth / 2, mDefaultTopHeight + mCustomHeight, r, b));
+		debug(String.format("%s bottom layout at l:%d t:%d, r:%d, b:%d",getLabel(),childWidth / 2, mDefaultTopHeight + mCustomHeight, r, b));
 	}
 	
 	void childLayout(View v, int l, int t, int r, int b) {
-		v.layout(l+childLeft, t+childTop, r+childLeft, b+childTop);
+		v.layout(l+mChildLeft, t+mChildTop, r+mChildLeft, b+mChildTop);
 	}
 	
 	void fadeInAnimation(final View ll) {
@@ -392,12 +399,12 @@ public class LabelLayout extends ViewGroup {
 	}
 
 	String getLabel() {
-		return "["+mLabel+"]:";
+		return "["+mTvLabel.getText()+"]:";
 	}
 	
-	void debug(String tag, String msg) {
+	void debug(String msg) {
 		if(debug)
-			Log.d(tag,msg);
+			Log.d(TAG,msg);
 	}
 	
 	public void showContent(boolean enable) {
