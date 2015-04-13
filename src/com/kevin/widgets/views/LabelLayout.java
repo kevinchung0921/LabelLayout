@@ -1,8 +1,8 @@
 package com.kevin.widgets.views;
 
 import android.content.Context;
-import android.content.res.Resources;
 import android.content.res.TypedArray;
+import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.text.TextUtils.TruncateAt;
 import android.util.AttributeSet;
@@ -11,12 +11,10 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.AccelerateInterpolator;
 import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
 import android.view.animation.AnimationSet;
 import android.view.animation.AnimationUtils;
-import android.view.animation.DecelerateInterpolator;
 import android.view.animation.ScaleAnimation;
 import android.view.animation.TranslateAnimation;
 import android.widget.TextView;
@@ -64,9 +62,9 @@ public class LabelLayout extends ViewGroup {
 	int mDefaultBottomHeight = 0;
 	int mDefaultContentHeight = 0;
 	int mLabelSize = 18;
-	static final int ANIMATION_DURATION = 300; 
+	static final int ANIMATION_DURATION = 150; 
 	
-	boolean mShowContent = true;
+	boolean mContentIsOpen = true;
 	TextView mTvLabel = null;
 	TextView mTvHide = null;
 	
@@ -83,7 +81,7 @@ public class LabelLayout extends ViewGroup {
 	String mLabel = "";
 	
 	
-	boolean debug = true;
+	boolean debug = false;
 	
 	boolean mEnableAnimation = true;
 	boolean mEnableHideContent = true;
@@ -109,8 +107,7 @@ public class LabelLayout extends ViewGroup {
         debug("mLabelOffset:"+mLabelOffset);
         mEnableAnimation = a.getBoolean(R.styleable.OutlineLayoutConfig_animation, true);
         mLabelSize *= dpToPx;
-        enableHideContent(a.getBoolean(R.styleable.OutlineLayoutConfig_canHideContent, true));
-        
+        canHideContent(a.getBoolean(R.styleable.OutlineLayoutConfig_canHideContent, true));        
         a.recycle();     
 		
 		dpToPx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 1,
@@ -127,8 +124,8 @@ public class LabelLayout extends ViewGroup {
 //		mTvLabel.setText(mLabel);
 //		mTvLabel.setTextSize(TypedValue.COMPLEX_UNIT_PX, mLabelSize);
         
-		mTvLabel.setPadding(0, 0, 0, 0);  // reset padding to prevent it got impacted from parent ViewGroup
-		
+		mTvLabel.setPadding(4, 0, 4, 0);  // reset padding to prevent it got impacted from parent ViewGroup
+		mTvLabel.setGravity(Gravity.CENTER);
         
         
         // setup and add decorate views
@@ -205,7 +202,7 @@ public class LabelLayout extends ViewGroup {
 				break;
 			}
 		}
-		if(mShowContent) {
+		if(mContentIsOpen) {
 			mCustomHeight = maxHeight;
 			mCustomWidth = maxWidth;
 		} else {
@@ -267,8 +264,7 @@ public class LabelLayout extends ViewGroup {
 				ul_width = childWidth -ur_width - mTvWidth;
 				break;
 		}
-				
-	
+		
 		View v = getChildAt(INDEX_LEFT_UP);
 
 		childLayout(v, 0, mDefaultTopHeight/2, ul_width, mTvHeight);
@@ -290,7 +286,7 @@ public class LabelLayout extends ViewGroup {
 				+ mCustomHeight);
 		childLayout(right, childWidth - mDefaultWidth, mDefaultTopHeight, childWidth, mDefaultTopHeight
 				+ mCustomHeight);
-		if(mShowContent) {
+		if(mContentIsOpen) {
 			// TODO this should according how many child added here
 			v = getChildAt(DEFAULT_VIEWS_NUM);	
 			if(v != null) {	
@@ -332,11 +328,11 @@ public class LabelLayout extends ViewGroup {
 			ScaleAnimation anim1 = new ScaleAnimation(0,1,0,1, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.01f);
 			anim1.setDuration(ANIMATION_DURATION);
 			anim1.setZAdjustment(TranslateAnimation.ZORDER_BOTTOM);
-			anim1.setInterpolator(new AccelerateInterpolator());		
+//			anim1.setInterpolator(new AccelerateInterpolator());		
 			Animation anim2 = AnimationUtils.loadAnimation(
 					getContext(), android.R.anim.fade_in);
 			anim2.setDuration(ANIMATION_DURATION);
-			anim2.setInterpolator(new AccelerateInterpolator());
+//			anim2.setInterpolator(new AccelerateInterpolator());
 			anim2.setAnimationListener(new AnimationListener() {
 	
 				@Override
@@ -368,11 +364,11 @@ public class LabelLayout extends ViewGroup {
 			ScaleAnimation anim1 = new ScaleAnimation(1,0,1,0, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.01f);
 			anim1.setDuration(ANIMATION_DURATION);
 			anim1.setZAdjustment(TranslateAnimation.ZORDER_BOTTOM);
-			anim1.setInterpolator(new DecelerateInterpolator());
+//			anim1.setInterpolator(new DecelerateInterpolator());
 			Animation anim2 = AnimationUtils.loadAnimation(
 					getContext(), android.R.anim.fade_out);
 			anim2.setDuration(ANIMATION_DURATION);
-			anim2.setInterpolator(new DecelerateInterpolator());
+//			anim2.setInterpolator(new DecelerateInterpolator());
 			set.addAnimation(anim1);
 			set.addAnimation(anim2);
 			anim1.setAnimationListener(new AnimationListener() {
@@ -408,24 +404,31 @@ public class LabelLayout extends ViewGroup {
 	}
 	
 	public void showContent(boolean enable) {
-		mShowContent = enable;
+		mContentIsOpen = enable;
 		requestLayout();
 	}
 	
-	public void enableHideContent(boolean enable) {
+	public boolean getContentOpen() {
+		return mContentIsOpen;
+	}
+	
+	public void canHideContent(boolean enable) {
 		mEnableHideContent = enable;
 		if(mEnableHideContent) {
         	mTvLabel.setBackgroundResource(android.R.drawable.list_selector_background);
         	mTvLabel.setOnClickListener(new OnClickListener() {
 				@Override
 				public void onClick(View v) {				
-					mShowContent = ! mShowContent;				
+					mContentIsOpen = ! mContentIsOpen;				
 					requestLayout();
 				}
 				
 			});
+        	mTvLabel.setPaintFlags(mTvLabel.getPaintFlags() |   Paint.UNDERLINE_TEXT_FLAG);
 		} else {
 			mTvLabel.setOnClickListener(null);
+			mTvLabel.setPaintFlags(mTvLabel.getPaintFlags() &   ~Paint.UNDERLINE_TEXT_FLAG);
 		}
 	}
+	
 }
