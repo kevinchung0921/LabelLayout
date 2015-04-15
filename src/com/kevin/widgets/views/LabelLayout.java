@@ -2,7 +2,6 @@ package com.kevin.widgets.views;
 
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.text.TextUtils.TruncateAt;
 import android.util.AttributeSet;
@@ -18,8 +17,9 @@ import android.view.animation.AnimationUtils;
 import android.view.animation.ScaleAnimation;
 import android.view.animation.TranslateAnimation;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.ImageView.ScaleType;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import com.kevin.widgets.R;
 
@@ -49,8 +49,9 @@ public class LabelLayout extends ViewGroup {
 	static final int INDEX_RIGHT = 5;
 	static final int INDEX_LEFT_BOTTOM = 6;
 	static final int INDEX_RIGHT_BOTTOM = 7;
-	static final int INDEX_CLOSED = 8;
-	static final int DEFAULT_VIEWS_NUM = 9;
+	static final int INDEX_CONTENT = 8;
+	static final int INDEX_CLOSED = 9;	
+	static final int DEFAULT_VIEWS_NUM = 10;
 
 	float dpToPx = 1;
 
@@ -72,6 +73,7 @@ public class LabelLayout extends ViewGroup {
 	TextView mTvLabel = null;
 	TextView mTvHide = null;
 	ImageView mShowControl = null;
+	LinearLayout mContent = null;
 
 	
 	// unit dip
@@ -105,6 +107,7 @@ public class LabelLayout extends ViewGroup {
 		
 		mTvLabel = new TextView(context, attrs, defStyle);
 		mShowControl = new ImageView(context);
+		mContent = new LinearLayout(context, attrs, defStyle);
 		
 		TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.OutlineLayoutConfig);
 		mLabelPos = a.getInt(R.styleable.OutlineLayoutConfig_label_pos, LABEL_MIDDLE);
@@ -129,7 +132,11 @@ public class LabelLayout extends ViewGroup {
 //		mTvLabel.setText(mLabel);
 //		mTvLabel.setTextSize(TypedValue.COMPLEX_UNIT_PX, mLabelSize);
         
-		mTvLabel.setPadding(4, 0, 4, 0);  // reset padding to prevent it got impacted from parent ViewGroup
+		  
+		if(!mTvLabel.getText().toString().equals(""))
+			mTvLabel.setPadding(4, 0, 4, 0); // reset padding to prevent it got impacted from parent ViewGroup
+		mContent.setPadding(0, 0, 0, 0); // clean content layout's padding
+//		mContent.setLayoutParams(new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT));
 		mTvLabel.setGravity(Gravity.CENTER);
         
 		
@@ -160,6 +167,7 @@ public class LabelLayout extends ViewGroup {
 		addView(r, INDEX_RIGHT);
 		addView(bl, INDEX_LEFT_BOTTOM);
 		addView(br, INDEX_RIGHT_BOTTOM);
+		addView(mContent, INDEX_CONTENT);
 		
 		mTvHide = new TextView(context);
 		mTvHide.setTypeface(Typeface.DEFAULT_BOLD);
@@ -200,25 +208,29 @@ public class LabelLayout extends ViewGroup {
 //			mShowControl.measure(MeasureSpec.makeMeasureSpec(mDefaultTopHeight, MeasureSpec.EXACTLY), 
 //					MeasureSpec.makeMeasureSpec(mDefaultTopHeight, MeasureSpec.EXACTLY));
 		}
+		
 		for (int i = DEFAULT_VIEWS_NUM; i < count; i++) {
 			View child = getChildAt(i);
-			if (child.getVisibility() != View.GONE) {
-				// only allow child use the size which subtract outline size 
-				child.measure(MeasureSpec.makeMeasureSpec(givenWidth-2*mDefaultWidth, MeasureSpec.EXACTLY), 
-						MeasureSpec.makeMeasureSpec(givenHeight-mDefaultTopHeight-mDefaultBottomHeight, MeasureSpec.EXACTLY));
-//				if (getOrientation() == LinearLayout.HORIZONTAL) {
-//					maxHeight = Math.max(maxHeight, child.getMeasuredHeight());
-//					maxWidth = maxWidth + child.getMeasuredWidth();
-//				} else {
-//					maxHeight = maxHeight + child.getMeasuredHeight();
-//					maxWidth = Math.max(maxWidth, child.getMeasuredWidth());
-//				}
-				maxHeight = child.getMeasuredHeight();
-				maxWidth = child.getMeasuredWidth();
-				childState = combineMeasuredStates(childState, child.getMeasuredState());
-				break;
+			if(child != null) {
+				this.removeView(child);
+				mContent.addView(child);
 			}
+//			if (child.getVisibility() != View.GONE) {
+				// only allow child use the size which subtract outline size 
+//				child.measure(MeasureSpec.makeMeasureSpec(givenWidth-2*mDefaultWidth, MeasureSpec.EXACTLY), 
+//						MeasureSpec.makeMeasureSpec(givenHeight-mDefaultTopHeight-mDefaultBottomHeight, MeasureSpec.EXACTLY));
+//				maxHeight = child.getMeasuredHeight();
+//				maxWidth = child.getMeasuredWidth();
+//				childState = combineMeasuredStates(childState, child.getMeasuredState());
+//				break;
+//			}
 		}
+		mContent.measure(MeasureSpec.makeMeasureSpec(givenWidth-2*mDefaultWidth-getPaddingLeft()-getPaddingRight(), MeasureSpec.AT_MOST), 
+						MeasureSpec.makeMeasureSpec(givenHeight-mDefaultTopHeight-mDefaultBottomHeight-getPaddingTop()-getPaddingBottom(), MeasureSpec.AT_MOST));
+		maxHeight = mContent.getMeasuredHeight();
+		maxWidth = mContent.getMeasuredWidth();
+
+
 		if(mContentIsOpen) {
 			mCustomHeight = maxHeight;
 			mCustomWidth = maxWidth;
@@ -322,7 +334,8 @@ public class LabelLayout extends ViewGroup {
 				+ mCustomHeight);
 		if(mContentIsOpen) {
 			// TODO this should according how many child added here
-			v = getChildAt(DEFAULT_VIEWS_NUM);	
+//			v = getChildAt(DEFAULT_VIEWS_NUM);	
+			v = getChildAt(INDEX_CONTENT);
 			if(v != null) {	
 				childLayout(v, mDefaultWidth, mDefaultTopHeight, childWidth - mDefaultWidth,
 						mDefaultTopHeight + mCustomHeight);
@@ -334,7 +347,7 @@ public class LabelLayout extends ViewGroup {
 			}
 			
 		} else {
-			v = getChildAt(DEFAULT_VIEWS_NUM);
+			v = getChildAt(INDEX_CONTENT);
 			if(v != null) {
 				if(v.getVisibility() == View.VISIBLE)
 					fadeOutAnimation(v);
