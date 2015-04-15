@@ -17,15 +17,17 @@ import android.view.animation.AnimationSet;
 import android.view.animation.AnimationUtils;
 import android.view.animation.ScaleAnimation;
 import android.view.animation.TranslateAnimation;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.ImageView.ScaleType;
 
 import com.kevin.widgets.R;
 
 
 /*
- *  This widget constructed by 9 views, but only [label] and [custom] could 
+ *  This widget constructed by 10 views, but only [label] and [custom] could 
  *  be configured. Other views are just decorate.  
- * 			[up_left_corner]   [label]    [up_right_corner]
+ * 			[up_left_corner]  [+/-] [label]    [up_right_corner]
  * 			[left]      [custom layout/empty]       [right]
  * 			[down_left]                        [down_right]
  *  
@@ -40,14 +42,15 @@ public class LabelLayout extends ViewGroup {
 	private static final String TAG = "LabelLayout";
 
 	static final int INDEX_LEFT_UP = 0;
-	static final int INDEX_TEXT = 1;
-	static final int INDEX_RIGHT_UP = 2;
-	static final int INDEX_LEFT = 3;
-	static final int INDEX_RIGHT = 4;
-	static final int INDEX_LEFT_BOTTOM = 5;
-	static final int INDEX_RIGHT_BOTTOM = 6;
-	static final int INDEX_CLOSED = 7;
-	static final int DEFAULT_VIEWS_NUM = 8;
+	static final int INDEX_SHOW_CONTROL = 1;
+	static final int INDEX_TEXT = 2;
+	static final int INDEX_RIGHT_UP = 3;
+	static final int INDEX_LEFT = 4;
+	static final int INDEX_RIGHT = 5;
+	static final int INDEX_LEFT_BOTTOM = 6;
+	static final int INDEX_RIGHT_BOTTOM = 7;
+	static final int INDEX_CLOSED = 8;
+	static final int DEFAULT_VIEWS_NUM = 9;
 
 	float dpToPx = 1;
 
@@ -57,7 +60,8 @@ public class LabelLayout extends ViewGroup {
 	int mCustomHeight = 0;
 	int mCustomWidth = 0;
 
-	int mDefaultWidth = 4;
+
+	int mDefaultWidth = 12; // at least 12dp to have better looking
 	int mDefaultTopHeight = 0;
 	int mDefaultBottomHeight = 0;
 	int mDefaultContentHeight = 0;
@@ -67,11 +71,11 @@ public class LabelLayout extends ViewGroup {
 	boolean mContentIsOpen = true;
 	TextView mTvLabel = null;
 	TextView mTvHide = null;
-	
+	ImageView mShowControl = null;
 
 	
 	// unit dip
-	static final int SIDE_WIDTH = 4;
+	static final int SIDE_WIDTH = 2;
 	static final int ROW_TOP_HEIGHT = 6;
 	static final int ROW_BOTTOM_HEIGHT = 12;
 	static final int ROW_HIDE_HEIGHT = 15;
@@ -100,6 +104,7 @@ public class LabelLayout extends ViewGroup {
 		super(context, attrs, defStyle);
 		
 		mTvLabel = new TextView(context, attrs, defStyle);
+		mShowControl = new ImageView(context);
 		
 		TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.OutlineLayoutConfig);
 		mLabelPos = a.getInt(R.styleable.OutlineLayoutConfig_label_pos, LABEL_MIDDLE);
@@ -113,7 +118,7 @@ public class LabelLayout extends ViewGroup {
 		dpToPx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 1,
 				getResources().getDisplayMetrics());
 		
-		mDefaultWidth = (int) (SIDE_WIDTH * dpToPx);
+		mDefaultWidth = (int) (mDefaultWidth * dpToPx);
 		mDefaultTopHeight = (int) (ROW_TOP_HEIGHT * dpToPx);
 		mDefaultBottomHeight = (int) (ROW_BOTTOM_HEIGHT * dpToPx);;
 		mDefaultContentHeight = (int)(ROW_HIDE_HEIGHT*dpToPx);
@@ -127,7 +132,12 @@ public class LabelLayout extends ViewGroup {
 		mTvLabel.setPadding(4, 0, 4, 0);  // reset padding to prevent it got impacted from parent ViewGroup
 		mTvLabel.setGravity(Gravity.CENTER);
         
-        
+		
+		mShowControl.setBackgroundResource(R.drawable.collapse_selector);		
+		mShowControl.setScaleType(ScaleType.FIT_XY);
+		// default is opened, set it selected
+		mShowControl.setSelected(true);
+		
         // setup and add decorate views
 		View ul = new View(context);
 		ul.setBackgroundResource(R.drawable.up_left_first);
@@ -143,6 +153,7 @@ public class LabelLayout extends ViewGroup {
 		br.setBackgroundResource(R.drawable.down_right);
 		
 		addView(ul, INDEX_LEFT_UP);
+		addView(mShowControl, INDEX_SHOW_CONTROL);
 		addView(mTvLabel, INDEX_TEXT);
 		addView(ur, INDEX_RIGHT_UP);
 		addView(l, INDEX_LEFT);
@@ -180,9 +191,15 @@ public class LabelLayout extends ViewGroup {
 		mTvHeight = v.getMeasuredHeight();
 		mTvWidth = v.getMeasuredWidth();
 		if(mDefaultTopHeight < mTvHeight)
-			mDefaultTopHeight = mTvHeight;
+			mDefaultTopHeight = mTvHeight;		
 		maxWidth = mTvWidth + 2*mDefaultWidth;
 		maxHeight = mDefaultTopHeight + mDefaultBottomHeight + mDefaultContentHeight;
+		if(mEnableHideContent) {
+			mShowControl.getLayoutParams().height = mDefaultTopHeight;
+			mShowControl.getLayoutParams().width = mDefaultTopHeight;
+//			mShowControl.measure(MeasureSpec.makeMeasureSpec(mDefaultTopHeight, MeasureSpec.EXACTLY), 
+//					MeasureSpec.makeMeasureSpec(mDefaultTopHeight, MeasureSpec.EXACTLY));
+		}
 		for (int i = DEFAULT_VIEWS_NUM; i < count; i++) {
 			View child = getChildAt(i);
 			if (child.getVisibility() != View.GONE) {
@@ -225,6 +242,7 @@ public class LabelLayout extends ViewGroup {
 	protected void onLayout(boolean changed, int l, int t, int r, int b) {
 		debug(String.format("%s Layout size l:%d, t:%d, r:%d, b:%d",getLabel(), l, t, r, b));
 		
+		int icon_size = 0;
 		int width = r - l;
 		int height = b - t;
 
@@ -246,22 +264,27 @@ public class LabelLayout extends ViewGroup {
 		int childWidth = mChildRight - mChildLeft;
 		int childHeight = mChildBottom - mChildTop;
 		
+		if(mEnableHideContent)
+			icon_size = mDefaultTopHeight;
+		
 		// check text view wider than total width
 		if(mTvWidth > childWidth - 2 *(mDefaultWidth))
 			mTvWidth = childWidth - 2 *(mDefaultWidth);
 		
 		switch (mLabelPos) {
 			case LABEL_MIDDLE:
-				ul_width = (childWidth - mTvWidth) /2+mLabelOffset;				
+				ul_width = (childWidth - mTvWidth) /2+mLabelOffset;			
 				ur_width = childWidth - ul_width -mTvWidth;
+				ul_width -= icon_size/2;
+				ur_width -= icon_size/2;
 				break;
 			case LABEL_LEFT:
 				ul_width = mDefaultWidth+mLabelOffset;
-				ur_width = childWidth -ul_width - mTvWidth;
+				ur_width = childWidth -ul_width - mTvWidth - icon_size;				
 				break;
 			case LABEL_RIGHT:
 				ur_width = mDefaultWidth+mLabelOffset;
-				ul_width = childWidth -ur_width - mTvWidth;
+				ul_width = childWidth -ur_width - mTvWidth - icon_size;
 				break;
 		}
 		
@@ -271,8 +294,17 @@ public class LabelLayout extends ViewGroup {
 		
 		v = getChildAt(INDEX_RIGHT_UP);
 		childLayout(v, childWidth - ur_width, mDefaultTopHeight/2, childWidth, mTvHeight);
+		
+		v = getChildAt(INDEX_SHOW_CONTROL);
+		if(mEnableHideContent) {
+			v.setVisibility(View.VISIBLE);
+			childLayout(v, ul_width, 0, icon_size+ul_width, icon_size);
+		} else {
+			v.setVisibility(View.GONE);
+		}
+		
 		v = getChildAt(INDEX_TEXT);
-		childLayout(v, ul_width, 0, ul_width+mTvWidth, mTvHeight);
+		childLayout(v, ul_width+icon_size, 0, ul_width+mTvWidth+icon_size, mTvHeight);
 		if (mCustomHeight > childHeight - mDefaultBottomHeight - mDefaultTopHeight)
 			mCustomHeight = childHeight - mDefaultBottomHeight - mDefaultTopHeight;
 		if (mCustomWidth > childWidth - 2 * mDefaultWidth)
@@ -281,6 +313,8 @@ public class LabelLayout extends ViewGroup {
 		View left = getChildAt(INDEX_LEFT);
 
 		childLayout(left, 0, mTvHeight, mDefaultWidth, mDefaultTopHeight + mCustomHeight);
+		
+				
 		View right = getChildAt(INDEX_RIGHT);
 		right.layout(childWidth - mDefaultWidth, mDefaultTopHeight, childWidth, mDefaultTopHeight
 				+ mCustomHeight);
@@ -405,6 +439,8 @@ public class LabelLayout extends ViewGroup {
 	
 	public void showContent(boolean enable) {
 		mContentIsOpen = enable;
+		if(mShowControl != null)
+			mShowControl.setSelected(mContentIsOpen);		
 		requestLayout();
 	}
 	
@@ -419,15 +455,26 @@ public class LabelLayout extends ViewGroup {
         	mTvLabel.setOnClickListener(new OnClickListener() {
 				@Override
 				public void onClick(View v) {				
-					mContentIsOpen = ! mContentIsOpen;				
+					mContentIsOpen = ! mContentIsOpen;
+					if(mShowControl != null)
+						mShowControl.setSelected(mContentIsOpen);
 					requestLayout();
 				}
 				
 			});
-        	mTvLabel.setPaintFlags(mTvLabel.getPaintFlags() |   Paint.UNDERLINE_TEXT_FLAG);
+        	mShowControl.setOnClickListener(new OnClickListener() {
+        		@Override
+				public void onClick(View v) {				
+					mContentIsOpen = ! mContentIsOpen;
+					if(mShowControl != null)
+						mShowControl.setSelected(mContentIsOpen);
+					requestLayout();
+				}
+        	});
+//        	mTvLabel.setPaintFlags(mTvLabel.getPaintFlags() |   Paint.UNDERLINE_TEXT_FLAG);
 		} else {
 			mTvLabel.setOnClickListener(null);
-			mTvLabel.setPaintFlags(mTvLabel.getPaintFlags() &   ~Paint.UNDERLINE_TEXT_FLAG);
+//			mTvLabel.setPaintFlags(mTvLabel.getPaintFlags() &   ~Paint.UNDERLINE_TEXT_FLAG);
 		}
 	}
 	
