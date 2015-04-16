@@ -104,7 +104,7 @@ public class LabelLayout extends ViewGroup {
 
 	public LabelLayout(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
-		
+		Log.d(TAG,"LabelLayout()");
 		mTvLabel = new TextView(context, attrs, defStyle);
 		mShowControl = new ImageView(context);
 		mContent = new LinearLayout(context, attrs, defStyle);
@@ -135,6 +135,8 @@ public class LabelLayout extends ViewGroup {
 		  
 		if(!mTvLabel.getText().toString().equals(""))
 			mTvLabel.setPadding(4, 0, 4, 0); // reset padding to prevent it got impacted from parent ViewGroup
+		else
+			mTvLabel.setPadding(0, 0, 0, 0);
 		mContent.setPadding(0, 0, 0, 0); // clean content layout's padding
 //		mContent.setLayoutParams(new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT));
 		mTvLabel.setGravity(Gravity.CENTER);
@@ -159,15 +161,15 @@ public class LabelLayout extends ViewGroup {
 		View br = new View(context);
 		br.setBackgroundResource(R.drawable.down_right);
 		
-		addView(ul, INDEX_LEFT_UP);
-		addView(mShowControl, INDEX_SHOW_CONTROL);
-		addView(mTvLabel, INDEX_TEXT);
-		addView(ur, INDEX_RIGHT_UP);
-		addView(l, INDEX_LEFT);
-		addView(r, INDEX_RIGHT);
-		addView(bl, INDEX_LEFT_BOTTOM);
-		addView(br, INDEX_RIGHT_BOTTOM);
-		addView(mContent, INDEX_CONTENT);
+		super.addView(ul, INDEX_LEFT_UP);
+		super.addView(mShowControl, INDEX_SHOW_CONTROL);
+		super.addView(mTvLabel, INDEX_TEXT);
+		super.addView(ur, INDEX_RIGHT_UP);
+		super.addView(l, INDEX_LEFT);
+		super.addView(r, INDEX_RIGHT);
+		super.addView(bl, INDEX_LEFT_BOTTOM);
+		super.addView(br, INDEX_RIGHT_BOTTOM);
+		super.addView(mContent, INDEX_CONTENT);
 		
 		mTvHide = new TextView(context);
 		mTvHide.setTypeface(Typeface.DEFAULT_BOLD);
@@ -175,7 +177,7 @@ public class LabelLayout extends ViewGroup {
 		mTvHide.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.WRAP_CONTENT));
 		mTvHide.setVisibility(View.GONE);
 		mTvHide.setGravity(Gravity.CENTER_HORIZONTAL);
-		addView(mTvHide, INDEX_CLOSED);
+		super.addView(mTvHide, INDEX_CLOSED);
 		
 		        
 	}
@@ -199,9 +201,11 @@ public class LabelLayout extends ViewGroup {
 		
 		View v = getChildAt(INDEX_TEXT);
 		debug(String.format("measure spec w:%s h:%s", MeasureSpec.toString(widthMeasureSpec),MeasureSpec.toString(heightMeasureSpec)));
-		v.measure(0, 0);
-		mTvHeight = v.getMeasuredHeight();
-		mTvWidth = v.getMeasuredWidth();
+		if(v != null) {
+			v.measure(0, 0);
+			mTvHeight = v.getMeasuredHeight();
+			mTvWidth = v.getMeasuredWidth();
+		}
 		if(mDefaultTopHeight < mTvHeight)
 			mDefaultTopHeight = mTvHeight;		
 		contentWidth = mTvWidth + 2*mDefaultWidth;
@@ -211,12 +215,14 @@ public class LabelLayout extends ViewGroup {
 			mShowControl.getLayoutParams().width = mDefaultTopHeight;
 		}
 		int childCount = count-DEFAULT_VIEWS_NUM;
-		View childs[] = new View[childCount];
-		for (int i = 0; i <childCount; i++) 
-			childs[i] = getChildAt(i+DEFAULT_VIEWS_NUM);			
-		for (int i=0;i <childs.length;i++) {
-			this.removeView(childs[i]);
-			mContent.addView(childs[i]);
+		if(childCount > 0) {
+			View childs[] = new View[childCount];
+			for (int i = 0; i <childCount; i++) 
+				childs[i] = getChildAt(i+DEFAULT_VIEWS_NUM);			
+			for (int i=0;i <childs.length;i++) {
+				this.removeView(childs[i]);
+				mContent.addView(childs[i]);
+			}
 		}
 		LayoutParams params = getLayoutParams();
 		int specW = MeasureSpec.EXACTLY;
@@ -373,7 +379,11 @@ public class LabelLayout extends ViewGroup {
 	}
 	
 	void childLayout(View v, int l, int t, int r, int b) {
-		v.layout(l+mChildLeft, t+mChildTop, r+mChildLeft, b+mChildTop);
+		if(v != null)
+			v.layout(l+mChildLeft, t+mChildTop, r+mChildLeft, b+mChildTop);
+		else {
+			Log.e(TAG, "Child is null!");
+		}
 	}
 	
 	void fadeInAnimation(final View ll) {
@@ -497,5 +507,17 @@ public class LabelLayout extends ViewGroup {
 //			mTvLabel.setPaintFlags(mTvLabel.getPaintFlags() &   ~Paint.UNDERLINE_TEXT_FLAG);
 		}
 	}
+	// override remove all views to prevent outline views remvoed
+	@Override
+	public void removeAllViews() {
+		if(mContent != null) {
+			mContent.removeAllViews();
+		}
+	}
 	
+	@Override
+	public void addView(View v) {
+		if(mContent != null)
+			mContent.addView(v);
+	}
 }
