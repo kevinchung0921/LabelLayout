@@ -175,7 +175,7 @@ public class LabelLayout extends ViewGroup {
 		mTvHide.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.WRAP_CONTENT));
 		mTvHide.setVisibility(View.GONE);
 		mTvHide.setGravity(Gravity.CENTER_HORIZONTAL);
-		super.addView(mTvHide, INDEX_CLOSED);
+		addView(mTvHide, INDEX_CLOSED);
 		
 		        
 	}
@@ -185,13 +185,17 @@ public class LabelLayout extends ViewGroup {
 
 		int count = getChildCount();
 
+		Log.d(TAG, "child count:"+count);
 		// Measurement will ultimately be computing these values.
-		int maxHeight = 0;
-		int maxWidth = 0;
+		int contentHeight = 0;
+		int contentWidth = 0;
 		int childState = 0;
 
 		int givenWidth = MeasureSpec.getSize(widthMeasureSpec);
 		int givenHeight = MeasureSpec.getSize(heightMeasureSpec);
+		
+		int reportHeight = givenWidth;
+		int reportWidth = givenHeight;
 		
 		View v = getChildAt(INDEX_TEXT);
 		debug(String.format("measure spec w:%s h:%s", MeasureSpec.toString(widthMeasureSpec),MeasureSpec.toString(heightMeasureSpec)));
@@ -200,53 +204,56 @@ public class LabelLayout extends ViewGroup {
 		mTvWidth = v.getMeasuredWidth();
 		if(mDefaultTopHeight < mTvHeight)
 			mDefaultTopHeight = mTvHeight;		
-		maxWidth = mTvWidth + 2*mDefaultWidth;
-		maxHeight = mDefaultTopHeight + mDefaultBottomHeight + mDefaultContentHeight;
+		contentWidth = mTvWidth + 2*mDefaultWidth;
+		contentHeight = mDefaultTopHeight + mDefaultBottomHeight + mDefaultContentHeight;
 		if(mEnableHideContent) {
 			mShowControl.getLayoutParams().height = mDefaultTopHeight;
 			mShowControl.getLayoutParams().width = mDefaultTopHeight;
-//			mShowControl.measure(MeasureSpec.makeMeasureSpec(mDefaultTopHeight, MeasureSpec.EXACTLY), 
-//					MeasureSpec.makeMeasureSpec(mDefaultTopHeight, MeasureSpec.EXACTLY));
 		}
+		int childCount = count-DEFAULT_VIEWS_NUM;
+		View childs[] = new View[childCount];
+		for (int i = 0; i <childCount; i++) 
+			childs[i] = getChildAt(i+DEFAULT_VIEWS_NUM);			
+		for (int i=0;i <childs.length;i++) {
+			this.removeView(childs[i]);
+			mContent.addView(childs[i]);
+		}
+		LayoutParams params = getLayoutParams();
+		int specW = MeasureSpec.EXACTLY;
+		int specH = MeasureSpec.EXACTLY;
+		if(params.height == LayoutParams.WRAP_CONTENT)
+			specH = MeasureSpec.AT_MOST;
+		if(params.width == LayoutParams.WRAP_CONTENT)
+			specH = MeasureSpec.AT_MOST;
 		
-		for (int i = DEFAULT_VIEWS_NUM; i < count; i++) {
-			View child = getChildAt(i);
-			if(child != null) {
-				this.removeView(child);
-				mContent.addView(child);
-			}
-//			if (child.getVisibility() != View.GONE) {
-				// only allow child use the size which subtract outline size 
-//				child.measure(MeasureSpec.makeMeasureSpec(givenWidth-2*mDefaultWidth, MeasureSpec.EXACTLY), 
-//						MeasureSpec.makeMeasureSpec(givenHeight-mDefaultTopHeight-mDefaultBottomHeight, MeasureSpec.EXACTLY));
-//				maxHeight = child.getMeasuredHeight();
-//				maxWidth = child.getMeasuredWidth();
-//				childState = combineMeasuredStates(childState, child.getMeasuredState());
-//				break;
-//			}
-		}
-		mContent.measure(MeasureSpec.makeMeasureSpec(givenWidth-2*mDefaultWidth-getPaddingLeft()-getPaddingRight(), MeasureSpec.AT_MOST), 
-						MeasureSpec.makeMeasureSpec(givenHeight-mDefaultTopHeight-mDefaultBottomHeight-getPaddingTop()-getPaddingBottom(), MeasureSpec.AT_MOST));
-		maxHeight = mContent.getMeasuredHeight();
-		maxWidth = mContent.getMeasuredWidth();
+		mContent.measure(MeasureSpec.makeMeasureSpec(givenWidth-2*mDefaultWidth-getPaddingLeft()-getPaddingRight(), MeasureSpec.getMode(widthMeasureSpec)), 
+						MeasureSpec.makeMeasureSpec(givenHeight-mDefaultTopHeight-mDefaultBottomHeight-getPaddingTop()-getPaddingBottom(), MeasureSpec.getMode(heightMeasureSpec)));
+		
+		contentHeight = mContent.getMeasuredHeight();
+		contentWidth = mContent.getMeasuredWidth();
 
 
 		if(mContentIsOpen) {
-			mCustomHeight = maxHeight;
-			mCustomWidth = maxWidth;
+			mCustomHeight = contentHeight;
+			mCustomWidth = contentWidth;
 		} else {
 			mCustomHeight = mDefaultContentHeight;
-			mCustomWidth = maxWidth;
+			mCustomWidth = contentWidth;
 		}
 
-		maxHeight = mCustomHeight+ mDefaultTopHeight + mDefaultBottomHeight + getPaddingTop()+getPaddingBottom();
-		maxWidth = mCustomWidth + 2*mDefaultWidth+ getPaddingLeft()+getPaddingRight();
+		contentHeight = mCustomHeight+ mDefaultTopHeight + mDefaultBottomHeight + getPaddingTop()+getPaddingBottom();
+		contentWidth = mCustomWidth + 2*mDefaultWidth+ getPaddingLeft()+getPaddingRight();
 
-		debug(getLabel()+" maxHeight:" + maxHeight + " maxWidth:" + maxWidth);
+		debug(getLabel()+" maxHeight:" + contentHeight + " maxWidth:" + contentWidth);
+		
+		if(params.height == LayoutParams.WRAP_CONTENT)
+			reportHeight = contentHeight;
+		if(params.width == LayoutParams.WRAP_CONTENT)
+			reportWidth = contentWidth;
 		// Report our final dimensions.
 		setMeasuredDimension(
-				resolveSizeAndState(maxWidth, widthMeasureSpec, childState),
-				resolveSizeAndState(maxHeight, heightMeasureSpec,
+				resolveSizeAndState(reportWidth, widthMeasureSpec, childState),
+				resolveSizeAndState(reportHeight, heightMeasureSpec,
 						childState << MEASURED_HEIGHT_STATE_SHIFT));
 	}
 	
