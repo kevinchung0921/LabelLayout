@@ -104,13 +104,12 @@ public class LabelLayout extends ViewGroup {
 
 	public LabelLayout(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
-		Log.d(TAG,"LabelLayout()");
 		mTvLabel = new TextView(context, attrs, defStyle);
 		mShowControl = new ImageView(context);
 		mContent = new LinearLayout(context, attrs, defStyle);
 		
 		TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.OutlineLayoutConfig);
-		mLabelPos = a.getInt(R.styleable.OutlineLayoutConfig_label_pos, LABEL_MIDDLE);
+		mLabelPos = a.getInt(R.styleable.OutlineLayoutConfig_label_pos, LABEL_LEFT);
         mLabelOffset = (int)a.getDimensionPixelSize(R.styleable.OutlineLayoutConfig_label_offset, 0);
         debug("mLabelOffset:"+mLabelOffset);
         mEnableAnimation = a.getBoolean(R.styleable.OutlineLayoutConfig_animation, true);
@@ -187,7 +186,6 @@ public class LabelLayout extends ViewGroup {
 
 		int count = getChildCount();
 
-		Log.d(TAG, "child count:"+count);
 		// Measurement will ultimately be computing these values.
 		int contentHeight = 0;
 		int contentWidth = 0;
